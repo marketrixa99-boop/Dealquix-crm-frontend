@@ -52,6 +52,11 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: "dashboard",
       },
       {
+        label: "Team Chat",
+        path: "/chat",
+        icon: "forum",
+      },
+      {
         label: "Leads",
         icon: "group",
         permissions: [PERMISSIONS.LEAD_VIEW],

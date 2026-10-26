@@ -60,6 +60,8 @@ import {
 } from "./features/integrations";
 import { ROUTES } from "./config/routes";
 import { PERMISSIONS } from "./types/auth";
+import { lazy, Suspense } from "react";
+const ChatPage = lazy(() => import("./features/chat/ChatPage"));
 
 export const router = createBrowserRouter([
   {
@@ -77,6 +79,7 @@ export const router = createBrowserRouter([
         element: <DashboardLayout />,
         children: [
           { path: "/dashboard", element: <DashboardDispatcher /> },
+          { path: "/chat", element: <Suspense fallback={<p>Loading team chat…</p>}><ChatPage /></Suspense> },
 
           /* Employees */
           {
