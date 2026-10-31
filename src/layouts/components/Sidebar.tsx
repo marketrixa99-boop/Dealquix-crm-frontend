@@ -412,7 +412,7 @@ const Sidebar = () => {
       )}
 
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-full flex-col bg-primary text-on-primary shadow-2xl transition-all duration-300 select-none ${collapsed ? "w-20" : "w-64"
+        className={`fixed left-0 top-0 z-50 crm-sidebar flex h-full flex-col shadow-2xl transition-all duration-300 select-none ${collapsed ? "w-20" : "w-64"
           } ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           }`}
       >

@@ -1,41 +1,41 @@
 @import "tailwindcss";
 
 @theme {
-  /* ---- Color tokens (Bharat Enterprise) ---- */
-  --color-surface: #f8f9ff;
-  --color-surface-dim: #cbdbf5;
-  --color-surface-bright: #f8f9ff;
-  --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #eff4ff;
-  --color-surface-container: #e5eeff;
-  --color-surface-container-high: #dce9ff;
-  --color-surface-container-highest: #d3e4fe;
-  --color-surface-variant: #d3e4fe;
+  /* DealQix night palette: navy surfaces, lime actions, cyan highlights. */
+  --color-surface: #0a101b;
+  --color-surface-dim: #080d16;
+  --color-surface-bright: #172338;
+  --color-surface-container-lowest: #101a29;
+  --color-surface-container-low: #131f30;
+  --color-surface-container: #19283b;
+  --color-surface-container-high: #203147;
+  --color-surface-container-highest: #293d54;
+  --color-surface-variant: #293d54;
 
-  --color-on-surface: #0b1c30;
-  --color-on-surface-variant: #454652;
+  --color-on-surface: #edf3fb;
+  --color-on-surface-variant: #acbcd1;
   --color-inverse-surface: #213145;
   --color-inverse-on-surface: #eaf1ff;
 
-  --color-outline: #757684;
-  --color-outline-variant: #c5c5d4;
+  --color-outline: #8194ad;
+  --color-outline-variant: #2a3b52;
   --color-surface-tint: #4355b9;
 
-  --color-primary: #24389c;
-  --color-on-primary: #ffffff;
-  --color-primary-container: #3f51b5;
-  --color-on-primary-container: #cacfff;
+  --color-primary: #c4f563;
+  --color-on-primary: #122006;
+  --color-primary-container: #324722;
+  --color-on-primary-container: #ddffac;
   --color-inverse-primary: #bac3ff;
 
-  --color-secondary: #006591;
-  --color-on-secondary: #ffffff;
-  --color-secondary-container: #39b8fd;
-  --color-on-secondary-container: #004666;
+  --color-secondary: #66dcf4;
+  --color-on-secondary: #06212a;
+  --color-secondary-container: #163b48;
+  --color-on-secondary-container: #b6effb;
 
-  --color-tertiary: #2a28bb;
-  --color-on-tertiary: #ffffff;
-  --color-tertiary-container: #4446d2;
-  --color-on-tertiary-container: #ceceff;
+  --color-tertiary: #b6a0ff;
+  --color-on-tertiary: #20143e;
+  --color-tertiary-container: #33274f;
+  --color-on-tertiary-container: #e7ddff;
 
   --color-error: #ba1a1a;
   --color-on-error: #ffffff;
@@ -57,8 +57,8 @@
   --color-on-tertiary-fixed: #07006c;
   --color-on-tertiary-fixed-variant: #2f2ebe;
 
-  --color-background: #f8f9ff;
-  --color-on-background: #0b1c30;
+  --color-background: #0a101b;
+  --color-on-background: #edf3fb;
 
   /* ---- Typography: font families (all Inter, kept as named roles) ---- */
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -179,4 +179,65 @@
     "wght" 400,
     "GRAD" 0,
     "opsz" 24;
+}
+/* Legacy utility colours share the same dark surfaces across CRM modules. */
+@layer utilities {
+  .bg-white { background-color: var(--color-surface-container-lowest); }
+  .bg-white\/90 { background-color: rgb(16 26 41 / 96%); }
+}
+@layer base {
+  :root { color-scheme: dark; }
+  body { background-image: radial-gradient(ellipse at top right, #17312b55, transparent 55%); }
+  ::selection { background: #c4f563; color: #122006; }
+  :focus-visible { outline: 2px solid #c4f563; outline-offset: 3px; }
+  input, select, textarea { color-scheme: dark; }
+  input::placeholder, textarea::placeholder { color: #8194ad; }
+  * { scrollbar-width: thin; scrollbar-color: #33475e #101a29; }
+}
+/* Palette aliases keep existing slate/indigo components consistent. */
+@theme {
+  --color-slate-50: #131f30;
+  --color-slate-100: #19283b;
+  --color-slate-200: #2a3b52;
+  --color-slate-300: #52677f;
+  --color-slate-400: #91a5be;
+  --color-slate-500: #a6b8ce;
+  --color-slate-600: #becbdd;
+  --color-slate-700: #d2dceb;
+  --color-slate-800: #e2eaf5;
+  --color-slate-900: #f1f5fb;
+  --color-indigo-50: #202d21;
+  --color-indigo-100: #2b3d26;
+  --color-indigo-200: #405b30;
+  --color-indigo-300: #94bb68;
+  --color-indigo-400: #b4df81;
+  --color-indigo-500: #c4f563;
+  --color-indigo-600: #c4f563;
+  --color-indigo-700: #d4ff89;
+  --color-indigo-800: #e1ffae;
+  --color-indigo-900: #edffcf;
+}
+@layer utilities {
+  .bg-indigo-500, .bg-indigo-600, .bg-primary { color: #122006; }
+}
+.crm-sidebar {
+  background: linear-gradient(180deg, #101b29, #0b131f);
+  color: #e8f0fa;
+  border-right: 1px solid #24364a;
+}
+.crm-sidebar [class*="text-on-primary"] { color: #acbcd1; }
+.crm-sidebar a[aria-current="page"] {
+  background: #c4f563;
+  color: #122006;
+  box-shadow: 0 0 18px #c4f56318;
+}
+.crm-sidebar a[aria-current="page"] span { color: inherit; }
+.crm-sidebar a[aria-current="page"] span.absolute { background: #122006; }
+.crm-content { min-width: 0; padding: 24px; }
+@media (max-width: 640px) {
+  .crm-content { padding: 16px 12px; }
+  input, select, textarea { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }

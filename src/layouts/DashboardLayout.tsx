@@ -27,10 +27,10 @@ const DashboardLayout = () => {
 
       <main
         className={`pt-16 min-h-screen transition-all duration-300 ${
-          collapsed ? "lg:pl-20" : "lg:pl-72"
+          collapsed ? "lg:pl-20" : "lg:pl-64"
         }`}
       >
-        <div className="p-lg">
+        <div className="crm-content">
           <Outlet />
         </div>
       </main>
