@@ -45,7 +45,8 @@ apiClient.interceptors.response.use(
       error.response?.status === 401 &&
       originalRequest &&
       !originalRequest._retry &&
-      !originalRequest.url?.includes("/auth/refresh");
+      !originalRequest.url?.includes("/auth/refresh") &&
+      !originalRequest.url?.includes("/auth/login");
 
     if (!shouldAttemptRefresh) {
       return Promise.reject(error);
@@ -88,8 +89,14 @@ apiClient.interceptors.response.use(
       return apiClient(originalRequest!);
     } catch (refreshError) {
       flushQueue(refreshError, null);
-      clearSession();
-      window.location.href = "/login";
+      // Temporary failures must preserve the session so a later request can refresh.
+      const status = axios.isAxiosError(refreshError)
+        ? refreshError.response?.status
+        : undefined;
+      if (status === 401) {
+        clearSession();
+        window.location.href = "/login";
+      }
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
