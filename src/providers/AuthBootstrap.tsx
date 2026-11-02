@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useEffect, useRef, type ReactNode } from "react";
 import { useAuthStore } from "@/store/auth.store";
 import { apiClient } from "@/services/apiClient";
@@ -27,12 +28,20 @@ export default function AuthBootstrap({ children }: { children: ReactNode }) {
         const { accessToken, refreshToken: newRefreshToken } = data.data;
 
         // set token first so the /me call below is authorized
-        useAuthStore.getState().setAccessToken(accessToken);
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser) {
+          setSession(currentUser, accessToken, newRefreshToken);
+        } else {
+          useAuthStore.getState().setAccessToken(accessToken);
+        }
 
         const user = await authApi.me();
         setSession(user, accessToken, newRefreshToken);
-      } catch {
-        clearSession();
+      } catch (error) {
+        // Preserve the session on rate limits, network errors, and server outages.
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          clearSession();
+        }
       } finally {
         setBootstrapping(false);
       }
