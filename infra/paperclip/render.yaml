@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: marketrixa-paperclip
+    runtime: image
+    region: oregon
+    plan: 1c-2g
+    image:
+      url: ghcr.io/paperclipai/paperclip@sha256:40f46940c4612ead131aebe6079cd4651f8cd1434af49f7c621887f4a452a62e
+    healthCheckPath: /api/health
+    disk:
+      name: paperclip-data
+      mountPath: /paperclip
+      sizeGB: 5
+    envVars:
+      - key: PORT
+        value: "3100"
+      - key: HOST
+        value: 0.0.0.0
+      - key: SERVE_UI
+        value: "true"
+      - key: PAPERCLIP_HOME
+        value: /paperclip
+      - key: PAPERCLIP_DEPLOYMENT_MODE
+        value: authenticated
+      - key: PAPERCLIP_DEPLOYMENT_EXPOSURE
+        value: public
+      - key: PAPERCLIP_PUBLIC_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      - key: PAPERCLIP_AGENT_JWT_SECRET
+        generateValue: true
+      - key: PAPERCLIP_TOOL_ACTION_SIGNING_SECRET
+        generateValue: true
