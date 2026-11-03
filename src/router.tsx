@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate } from "react-router";
+import MarketingPage from "./features/marketing/MarketingPage";
 import DashboardLayout from "@/layouts/DashboardLayout";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import GuestRoute from "@/routes/GuestRoute";
@@ -77,6 +78,7 @@ export const router = createBrowserRouter([
         element: <DashboardLayout />,
         children: [
           { path: "/dashboard", element: <DashboardDispatcher /> },
+          ...["/marketing", "/marketing/create", "/marketing/campaigns", "/marketing/creatives", "/marketing/reports"].map(path => ({ path, element: <MarketingPage /> })),
 
           /* Employees */
           {

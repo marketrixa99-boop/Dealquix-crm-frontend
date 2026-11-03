@@ -105,6 +105,18 @@ export const NAV_GROUPS: NavGroup[] = [
         permissions: [PERMISSIONS.TASK_VIEW],
       },
       {
+        label: "Marketing",
+        icon: "campaign",
+        roles: [ROLES.HEAD],
+        children: [
+          { label: "Overview", path: "/marketing" },
+          { label: "Create Ad", path: "/marketing/create" },
+          { label: "Campaigns", path: "/marketing/campaigns" },
+          { label: "Creatives", path: "/marketing/creatives" },
+          { label: "Reports", path: "/marketing/reports" },
+        ],
+      },
+      {
         label: "Attendance",
         icon: "calendar_today",
         permissions: [PERMISSIONS.ATTENDANCE_VIEW],
