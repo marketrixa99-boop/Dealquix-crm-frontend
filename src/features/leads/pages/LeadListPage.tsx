@@ -86,7 +86,7 @@ const LeadListPage = () => {
   const isMineView = viewMode === "mine";
   const isFollowupsView = viewMode === "followups";
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const debouncedSearch = useDebouncedValue(searchQuery);
 
   const [selectedStatus, setSelectedStatus] = useState<LeadStatus | "">("");

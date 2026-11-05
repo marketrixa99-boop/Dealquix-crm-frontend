@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate } from "react-router";
+import OperationsPage from "./features/operations/OperationsPage";
 import DashboardLayout from "@/layouts/DashboardLayout";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import GuestRoute from "@/routes/GuestRoute";
@@ -132,6 +133,7 @@ export const router = createBrowserRouter([
             element: <PermissionRoute permission={PERMISSIONS.LEAD_VIEW} />,
             children: [
               { path: "/leads", element: <LeadListPage /> },
+              { path: "/workspace", element: <OperationsPage /> },
               { path: "/leads/:leadId", element: <LeadDetailPage /> },
             ],
           },

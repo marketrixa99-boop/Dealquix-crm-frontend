@@ -105,6 +105,12 @@ export const NAV_GROUPS: NavGroup[] = [
         permissions: [PERMISSIONS.TASK_VIEW],
       },
       {
+        label: "Team workspace",
+        path: "/workspace",
+        icon: "support_agent",
+        permissions: [PERMISSIONS.LEAD_VIEW],
+      },
+      {
         label: "Attendance",
         icon: "calendar_today",
         permissions: [PERMISSIONS.ATTENDANCE_VIEW],
