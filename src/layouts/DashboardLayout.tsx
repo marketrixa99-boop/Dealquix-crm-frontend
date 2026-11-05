@@ -1,4 +1,5 @@
 import { Outlet } from "react-router";
+import TeamChat from "@/features/teamChat/TeamChat";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import { useSidebarStore } from "@/store/sidebar.store";
@@ -24,6 +25,7 @@ const DashboardLayout = () => {
 
       {/* Employees only: floating reminder while today's report is due */}
       <DailyReportReminder />
+      <TeamChat />
 
       <main
         className={`pt-16 min-h-screen transition-all duration-300 ${
