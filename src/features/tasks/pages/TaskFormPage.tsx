@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuthStore } from "@/store/auth.store";
 import { ROLES } from "@/types/auth";
@@ -6,6 +6,7 @@ import { useBranchesQuery } from "@/features/branches";
 import { useEmployeesQuery } from "@/features/employees";
 import { useCreateTask } from "../hooks/useTasks";
 import LeadPicker from "../components/LeadPicker";
+import { RevenueTaskCreator } from "../components/BranchRevenueTargets";
 import type { Lead } from "@/types/lead";
 import {
   TASK_PRIORITY,
@@ -29,12 +30,12 @@ const PRIORITY_HINT: Record<TaskPriority, string> = {
   urgent: "Time-critical — flag immediately",
 };
 
-const TaskFormPage = () => {
+const MemberTaskFormPage = () => {
   const navigate = useNavigate();
   const currentUser = useAuthStore((s) => s.user);
   const isHead = currentUser?.role === ROLES.HEAD;
 
-  const [branchId, setBranchId] = useState("");
+  const [selectedBranchId, setBranchId] = useState("");
   const [form, setForm] = useState(EMPTY_FORM);
   const [selectedLeads, setSelectedLeads] = useState<Lead[]>([]);
 
@@ -50,22 +51,19 @@ const TaskFormPage = () => {
     return branches.filter((b) => own.has(b._id));
   }, [branches, isHead, currentUser?.branches]);
 
-  // Auto-select — and, below, collapse the picker to a static label — when
-  // there's only one branch to choose from (always true for Manager/
-  // Employee, who are hard-restricted to a single branch). Nothing for the
-  // user to decide, so don't make them click a dropdown with one option.
-  useEffect(() => {
-    if (assignableBranches.length === 1) {
-      setBranchId(assignableBranches[0]._id);
-    }
-  }, [assignableBranches]);
+  const branchId =
+    assignableBranches.length === 1
+      ? assignableBranches[0]._id
+      : selectedBranchId;
 
-  const { data: employeeData, isLoading: employeesLoading } = useEmployeesQuery({
-    role: ROLES.EMPLOYEE,
-    branchId: branchId || undefined,
-    isActive: true,
-    limit: 100,
-  });
+  const { data: employeeData, isLoading: employeesLoading } = useEmployeesQuery(
+    {
+      role: ROLES.EMPLOYEE,
+      branchId: branchId || undefined,
+      isActive: true,
+      limit: 100,
+    },
+  );
 
   const handleBranchChange = (id: string) => {
     setBranchId(id);
@@ -83,16 +81,21 @@ const TaskFormPage = () => {
         title: form.title.trim(),
         description: form.description.trim() || undefined,
         assignedTo: form.assignedTo,
-        leads: selectedLeads.length > 0 ? selectedLeads.map((l) => l._id) : undefined,
+        leads:
+          selectedLeads.length > 0
+            ? selectedLeads.map((l) => l._id)
+            : undefined,
         priority: form.priority,
-        dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : undefined,
+        dueDate: form.dueDate
+          ? new Date(form.dueDate).toISOString()
+          : undefined,
         remarks: form.remarks.trim() || undefined,
       },
       {
         onSuccess: (task) => {
           navigate(`/tasks/${task._id}`);
         },
-      }
+      },
     );
   };
 
@@ -106,7 +109,9 @@ const TaskFormPage = () => {
             onClick={() => navigate("/tasks")}
             className="inline-flex items-center gap-1.5 font-label-sm text-xs font-bold text-on-surface-variant hover:text-primary transition-colors"
           >
-            <span className="material-symbols-outlined text-base">arrow_back</span>
+            <span className="material-symbols-outlined text-base">
+              arrow_back
+            </span>
             Back to Tasks
           </button>
           <h1 className="font-headline-md text-2xl sm:text-3xl font-extrabold text-on-surface">
@@ -157,7 +162,9 @@ const TaskFormPage = () => {
               maxLength={5000}
               placeholder="Add any relevant details or instructions..."
               value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
               className="w-full resize-none rounded-xl border border-outline-variant/40 bg-surface-container-low px-3.5 py-2.5 text-sm font-medium text-on-surface outline-none focus:border-primary"
             />
           </div>
@@ -166,7 +173,9 @@ const TaskFormPage = () => {
         {/* Section: Assignment */}
         <section className="space-y-4 border-t border-outline-variant/20 pt-6">
           <div className="flex items-center gap-2.5 text-primary">
-            <span className="material-symbols-outlined text-lg">person_add</span>
+            <span className="material-symbols-outlined text-lg">
+              person_add
+            </span>
             <h2 className="font-label-md text-xs font-bold uppercase tracking-wider">
               Assignment
             </h2>
@@ -206,15 +215,17 @@ const TaskFormPage = () => {
                 required
                 disabled={!branchId || employeesLoading}
                 value={form.assignedTo}
-                onChange={(e) => setForm({ ...form, assignedTo: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, assignedTo: e.target.value })
+                }
                 className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3.5 py-2.5 text-sm font-medium text-on-surface outline-none focus:border-primary disabled:opacity-50"
               >
                 <option value="">
                   {!branchId
                     ? "Select a branch first"
                     : employeesLoading
-                    ? "Loading employees..."
-                    : "Select employee"}
+                      ? "Loading employees..."
+                      : "Select employee"}
                 </option>
                 {employeeData?.employees.map((employee) => (
                   <option key={employee._id} value={employee._id}>
@@ -222,11 +233,13 @@ const TaskFormPage = () => {
                   </option>
                 ))}
               </select>
-              {branchId && !employeesLoading && employeeData?.employees.length === 0 && (
-                <p className="mt-1 text-[10px] text-rose-600">
-                  No active employees found in this branch.
-                </p>
-              )}
+              {branchId &&
+                !employeesLoading &&
+                employeeData?.employees.length === 0 && (
+                  <p className="mt-1 text-[10px] text-rose-600">
+                    No active employees found in this branch.
+                  </p>
+                )}
             </div>
           </div>
 
@@ -264,7 +277,9 @@ const TaskFormPage = () => {
               </label>
               <select
                 value={form.priority}
-                onChange={(e) => setForm({ ...form, priority: e.target.value as TaskPriority })}
+                onChange={(e) =>
+                  setForm({ ...form, priority: e.target.value as TaskPriority })
+                }
                 className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3.5 py-2.5 text-sm font-medium text-on-surface outline-none focus:border-primary"
               >
                 {Object.values(TASK_PRIORITY).map((priority) => (
@@ -335,4 +350,38 @@ const TaskFormPage = () => {
   );
 };
 
-export default TaskFormPage;
+export default function TaskFormPage() {
+  const user = useAuthStore((state) => state.user);
+  const navigate = useNavigate();
+  const [mode, setMode] = useState<"branch" | "member">("branch");
+  if (user?.role !== ROLES.HEAD) return <MemberTaskFormPage />;
+  return (
+    <div className="space-y-5 p-3 sm:p-6">
+      <nav aria-label="Task type" className="flex flex-wrap gap-3">
+        <button
+          type="button"
+          aria-pressed={mode === "branch"}
+          className={`min-h-11 rounded-xl px-4 text-sm font-bold ${mode === "branch" ? "bg-primary text-on-primary" : "bg-surface-container-high text-on-surface"}`}
+          onClick={() => setMode("branch")}
+        >
+          Branch revenue task
+        </button>
+        <button
+          type="button"
+          aria-pressed={mode === "member"}
+          className={`min-h-11 rounded-xl px-4 text-sm font-bold ${mode === "member" ? "bg-primary text-on-primary" : "bg-surface-container-high text-on-surface"}`}
+          onClick={() => setMode("member")}
+        >
+          Member task
+        </button>
+      </nav>
+      {mode === "branch" ? (
+        <RevenueTaskCreator
+          onClose={() => navigate("/tasks#revenue-targets")}
+        />
+      ) : (
+        <MemberTaskFormPage />
+      )}
+    </div>
+  );
+}

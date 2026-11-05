@@ -5,10 +5,12 @@ import { apiClient } from "@/services/apiClient";
 import { useAuthStore } from "@/store/auth.store";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getErrorMessage } from "@/utils/getErrorMessage";
+import toast from "react-hot-toast";
 
 type Target = {
   _id: string;
   title: string;
+  description?: string;
   branch: string;
   branchName: string;
   targetAmount: number;
@@ -72,17 +74,20 @@ function TargetForm({
 }) {
   const [form, setForm] = useState(() => ({
     title: target?.title || "Branch revenue target",
-    branchId: target?.branch || branches[0]?._id || "",
+    branchIds: target ? [target.branch] : [],
+    description: target?.description || "",
     targetAmount: String(target?.targetAmount || ""),
     startDate: target?.startDate || indiaToday(),
     endDate: target?.endDate || weekEnd(indiaToday()),
     archived: target?.archived || false,
   }));
+  const [requestId] = useState(() => crypto.randomUUID());
   const client = useQueryClient();
   const save = useMutation({
     mutationFn: async () => {
       const data = {
         title: form.title.trim(),
+        description: form.description.trim(),
         targetAmount: Number(form.targetAmount),
         startDate: form.startDate,
         endDate: form.endDate,
@@ -93,12 +98,18 @@ function TargetForm({
             archived: form.archived,
             version: target.version,
           })
-        : apiClient.post("/revenue-targets", {
+        : apiClient.post("/revenue-targets/batch", {
             ...data,
-            branchId: form.branchId,
+            branchIds: form.branchIds,
+            requestId,
           });
     },
     onSuccess: () => {
+      toast.success(
+        target
+          ? "Branch task updated"
+          : `${form.branchIds.length} branch tasks created`,
+      );
       void client.invalidateQueries({ queryKey: ["branch-revenue-targets"] });
       onClose();
     },
@@ -123,28 +134,74 @@ function TargetForm({
           onChange={(e) => setForm({ ...form, title: e.target.value })}
         />
       </label>
-      <label className="text-sm font-bold">
-        Branch
-        <select
-          className={field}
-          value={form.branchId}
-          required
-          disabled={!!target || save.isPending}
-          onChange={(e) => setForm({ ...form, branchId: e.target.value })}
-        >
-          <option value="">Select branch</option>
-          {!branches.some((b) => b._id === form.branchId) && target ? (
-            <option value={target.branch}>{target.branchName}</option>
+      {target ? (
+        <div className="text-sm">
+          <span className="font-bold">Branch</span>
+          <p className="mt-2">{target.branchName}</p>
+        </div>
+      ) : (
+        <fieldset className="rounded-xl border border-outline-variant/30 p-3 sm:row-span-2">
+          <legend className="px-1 text-sm font-bold">
+            Branches · select one or more *
+          </legend>
+          <div className="mb-2 flex flex-wrap items-center gap-3 text-xs">
+            <button
+              type="button"
+              disabled={save.isPending}
+              className="min-h-9 font-bold text-primary underline"
+              onClick={() =>
+                setForm({
+                  ...form,
+                  branchIds: branches.slice(0, 50).map((b) => b._id),
+                })
+              }
+            >
+              Select all (up to 50)
+            </button>
+            <button
+              type="button"
+              disabled={save.isPending}
+              className="min-h-9 text-on-surface-variant underline"
+              onClick={() => setForm({ ...form, branchIds: [] })}
+            >
+              Clear
+            </button>
+            <span>{form.branchIds.length} selected</span>
+          </div>
+          <div className="max-h-56 overflow-y-auto">
+            {branches.map((b) => (
+              <label
+                key={b._id}
+                className="flex min-h-11 items-center gap-3 rounded-lg px-2 text-sm hover:bg-surface"
+              >
+                <input
+                  type="checkbox"
+                  checked={form.branchIds.includes(b._id)}
+                  disabled={
+                    save.isPending ||
+                    (!form.branchIds.includes(b._id) &&
+                      form.branchIds.length >= 50)
+                  }
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      branchIds: e.target.checked
+                        ? [...form.branchIds, b._id]
+                        : form.branchIds.filter((id) => id !== b._id),
+                    })
+                  }
+                />
+                {b.name}
+              </label>
+            ))}
+          </div>
+          {branches.length === 0 ? (
+            <p className="text-xs">No active branches available.</p>
           ) : null}
-          {branches.map((b) => (
-            <option key={b._id} value={b._id}>
-              {b.name}
-            </option>
-          ))}
-        </select>
-      </label>
+        </fieldset>
+      )}
       <label className="text-sm font-bold">
-        Revenue target (₹)
+        {target ? "Revenue target (₹)" : "Revenue target per branch (₹)"}
         <input
           type="number"
           className={field}
@@ -190,6 +247,27 @@ function TargetForm({
           />
         </label>
       </div>
+      <label className="text-sm font-bold sm:col-span-2">
+        Description / instructions
+        <textarea
+          rows={3}
+          maxLength={5000}
+          className={field}
+          value={form.description}
+          disabled={save.isPending}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          placeholder="Add instructions for the selected branches…"
+        />
+      </label>
+      {!target && form.branchIds.length > 0 ? (
+        <p className="rounded-xl bg-primary/10 p-3 text-sm font-bold text-primary sm:col-span-2">
+          {form.branchIds.length} separate branch tasks ·{" "}
+          {Number(form.targetAmount) > 0
+            ? `${money(Number(form.targetAmount))} target for each branch`
+            : "set the revenue target per branch"}
+          . Each branch sees only its own card; Head sees all selected branches.
+        </p>
+      ) : null}
       <p className="text-xs text-on-surface-variant sm:col-span-2">
         Both dates included, India time. Only verified revenue is counted, using
         the revenue entry date. Late approvals update this target too. Maximum
@@ -215,13 +293,13 @@ function TargetForm({
         <button
           type="submit"
           className={button}
-          disabled={save.isPending || !form.branchId}
+          disabled={save.isPending || form.branchIds.length === 0}
         >
           {save.isPending
             ? "Saving…"
             : target
               ? "Save changes"
-              : "Create branch target"}
+              : "Create branch tasks"}
         </button>
         <button
           type="button"
@@ -394,6 +472,11 @@ function TargetCards({ compact }: { compact: boolean }) {
                     {target.phase}
                   </span>
                 </div>
+                {target.description ? (
+                  <p className="mt-2 whitespace-pre-wrap break-words text-xs text-on-surface-variant">
+                    {target.description}
+                  </p>
+                ) : null}
                 <p className="mt-2 text-xs text-on-surface-variant">
                   {dateLabel(target.startDate)} – {dateLabel(target.endDate)}
                 </p>
@@ -489,4 +572,33 @@ export default function BranchRevenueTargets({
   return userId && hasPermission("task:view") ? (
     <TargetCards key={userId} compact={compact} />
   ) : null;
+}
+
+export function RevenueTaskCreator({ onClose }: { onClose: () => void }) {
+  const userId = useAuthStore((state) => state.user?._id);
+  const branches = useQuery({
+    queryKey: ["branch-revenue-targets", userId, "branches"],
+    queryFn: () => get<{ _id: string; name: string }[]>("/branches"),
+    retry: false,
+  });
+  return (
+    <section className="mx-auto max-w-5xl rounded-2xl border border-outline-variant/30 bg-surface-container-lowest p-4 text-on-surface sm:p-6">
+      <h1 className="text-2xl font-bold">Create branch revenue task</h1>
+      <p className="mt-2 text-sm text-on-surface-variant">
+        Select branches once. Each selected branch gets its own task and
+        verified revenue progress for the chosen dates.
+      </p>
+      {branches.isPending ? (
+        <p role="status" className="py-6">
+          Loading branches…
+        </p>
+      ) : branches.isError ? (
+        <p role="alert" className="mt-4 text-error">
+          {getErrorMessage(branches.error, "Could not load branches")}
+        </p>
+      ) : (
+        <TargetForm branches={branches.data} onClose={onClose} />
+      )}
+    </section>
+  );
 }
