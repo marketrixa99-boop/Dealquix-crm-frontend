@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import BranchRevenueTargets from "../components/BranchRevenueTargets";
 import { useNavigate } from "react-router";
 import { taskQueryKeys, useTasks, useUpdateTask } from "../hooks/useTasks";
 import RefreshButton from "@/components/ui/RefreshButton";
@@ -172,6 +173,7 @@ const TaskListPage = () => {
         </div>
       </div>
 
+      <BranchRevenueTargets />
       {/* --- STATS STRIP + LIST/BOARD TOGGLE (one row, to keep the list/board itself above the fold) --- */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-outline-variant/30 bg-surface-container-lowest px-4 py-2.5 shadow-sm">
         <div className="flex flex-wrap items-center divide-x divide-outline-variant/20">
