@@ -220,13 +220,13 @@ export class SearchRegistry {
     },
     {
       id: "dialer-numbers",
-      title: "Phone Numbers",
-      description: "Manage Stringee phone lines",
+      title: "Dialixa setup",
+      description: "Configure Dialixa and assign agent extensions",
       category: "Dialer",
       path: "/dialer/numbers",
       icon: "dialpad",
-      keywords: ["numbers", "stringee", "phone lines"],
-      permissions: [PERMISSIONS.STRINGEE_NUMBER_VIEW],
+      keywords: ["dialixa", "extension", "calling", "setup"],
+      permissions: [PERMISSIONS.DIALER_AGENT_VIEW],
     },
 
     // Attendance Module

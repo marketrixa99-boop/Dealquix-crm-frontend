@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { AuthUser } from "@/types/auth";
+import { useCallStore } from "./call.store";
 
 interface AuthState {
   user: AuthUser | null;
@@ -36,6 +37,8 @@ export const useAuthStore = create<AuthState>()(
       setBootstrapping: (isBootstrapping) => set({ isBootstrapping }),
 
       clearSession: () => {
+        useCallStore.getState().resetCallStore();
+        useCallStore.getState().setActiveLead(null);
         // Clear dialer session authentication flags on logout
         Object.keys(sessionStorage).forEach((key) => {
           if (key.startsWith("dialer_auth_verified_")) {

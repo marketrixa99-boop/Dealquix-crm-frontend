@@ -77,12 +77,12 @@ export const LeadCallHistory: React.FC<LeadCallHistoryProps> = ({ leadId }) => {
                 <span className="font-medium text-gray-700">
                   {call.caller?.name || "Agent"} ➔ {call.toNumber}
                 </span>
-                {getStatusBadge(call.callStatus)}
+                {getStatusBadge(call.callStatus === "requested" ? "Request sent" : call.callStatus === "unknown" ? "Outcome unknown" : call.callStatus === "requesting" ? "Request pending" : call.callStatus)}
               </div>
 
               <div className="flex justify-between text-gray-400 text-[11px]">
                 <span>{new Date(call.createdAt).toLocaleString()}</span>
-                <span>Duration: {formatDuration(call.duration)}</span>
+                <span>Duration: {call.provider === "dialixa" ? "Unavailable" : formatDuration(call.duration)}</span>
               </div>
 
               {call.recordingUrl && (

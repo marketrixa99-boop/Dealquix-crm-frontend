@@ -92,9 +92,9 @@ export const NAV_GROUPS: NavGroup[] = [
             permissions: [PERMISSIONS.CALL_LOG_VIEW],
           },
           {
-            label: "Numbers",
+            label: "Dialixa setup",
             path: "/dialer/numbers",
-            permissions: [PERMISSIONS.STRINGEE_NUMBER_VIEW],
+            permissions: [PERMISSIONS.DIALER_AGENT_VIEW],
           },
         ],
       },

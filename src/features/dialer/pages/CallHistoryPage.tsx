@@ -389,7 +389,11 @@ const CallHistoryPage: React.FC = () => {
               <option value="ended">Ended</option>
               <option value="missed">Missed</option>
               <option value="rejected">Rejected</option>
-              <option value="started">Started</option>
+              <option value="started">Started (legacy)</option>
+              <option value="requested">Request sent</option>
+              <option value="requesting">Request pending</option>
+              <option value="unknown">Outcome unknown</option>
+              <option value="failed">Failed</option>
             </select>
           </div>
 
@@ -569,12 +573,12 @@ const CallHistoryPage: React.FC = () => {
                           log.callStatus,
                         )}`}
                       >
-                        {log.callStatus}
+                        {log.callStatus === "requested" ? "Request sent" : log.callStatus === "unknown" ? "Outcome unknown" : log.callStatus === "requesting" ? "Request pending" : log.callStatus}
                       </span>
                     </td>
 
                     <td className="py-3.5 px-4 font-mono font-semibold">
-                      {formatDuration(log.duration)}
+                      {log.provider === "dialixa" ? "Unavailable" : formatDuration(log.duration)}
                     </td>
 
                     <td className="py-3.5 px-4">
@@ -591,7 +595,7 @@ const CallHistoryPage: React.FC = () => {
                         </audio>
                       ) : (
                         <span className="text-xs text-slate-400">
-                          No Recording
+                          {log.provider === "dialixa" ? "Unavailable" : "No Recording"}
                         </span>
                       )}
                     </td>

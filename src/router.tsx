@@ -32,7 +32,7 @@ import {
   TeamAttendancePage,
 } from "@/features/attendance";
 import { TaskListPage, TaskFormPage, TaskDetailPage } from "@/features/tasks";
-import { CallHistoryPage, DialerPage, StringeeNumbersPage } from "./features/dialer";
+import { CallHistoryPage, DialerPage, DialixaSetupPage } from "./features/dialer";
 import { PerformanceDispatcher } from "./features/performance";
 import {
   LeaveApprovalsPage,
@@ -298,9 +298,9 @@ export const router = createBrowserRouter([
             ],
           },
           {
-            element: <PermissionRoute permission={PERMISSIONS.STRINGEE_NUMBER_VIEW} />,
+            element: <PermissionRoute permission={PERMISSIONS.DIALER_AGENT_VIEW} />,
             children: [
-              { path: "/dialer/numbers", element: <StringeeNumbersPage /> },
+              { path: "/dialer/numbers", element: <DialixaSetupPage /> },
             ],
           },
 

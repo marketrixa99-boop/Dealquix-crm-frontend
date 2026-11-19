@@ -1,513 +1,102 @@
-// // src/features/dialer/components/Dialer.tsx
-// import { useEffect, useState } from "react";
-// import { useSearchParams, useNavigate } from "react-router";
-// import { useQuery } from "@tanstack/react-query";
-// import { useStringeeClient } from "../hooks/useStringeeClient";
-// import { useDialer } from "../hooks/useDialer";
-// import { useAuthStore } from "@/store/auth.store";
-// import { useLead } from "@/features/leads/hooks/useLeads";
-// import { KeypadConsole } from "./KeypadConsole";
-// import { LeadContextCard } from "./LeadContextCard";
-// import { RecentCallLogsTable } from "./RecentCallLogsTable";
-// import { stringeeNumberApi } from "@/services/stringeeNumberApi";
-// import { DialerAccessModal } from "./DialerAccessModal";
-// import { ROLES } from "@/types/auth";
-
-// export const Dialer = () => {
-//   const user = useAuthStore((s) => s.user);
-//   const navigate = useNavigate();
-//   const [searchParams] = useSearchParams();
-//   const paramLeadId = searchParams.get("leadId") || searchParams.get("phone");
-
-//   const isElevatedRole =
-//     user?.role === ROLES.HEAD ||
-//     user?.role === ROLES.ADMIN ||
-//     user?.role === ROLES.MANAGER;
-
-//   // Generate today's cache key for the employee session
-//   // const todayStr = new Date().toISOString().split("T")[0];
-//   // const storageKey = `dialer_auth_verified_${user?._id}_${todayStr}`;
-
-//   const storageKey = `dialer_auth_verified_${user?._id}`;
-
-//   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-//     if (isElevatedRole) return true;
-//     return sessionStorage.getItem(storageKey) === "true";
-//   });
-
-//   const {
-//     data: assignment,
-//     isLoading: isLoadingAssignment,
-//     isError,
-//   } = useQuery({
-//     queryKey: ["my-stringee-assignment"],
-//     queryFn: stringeeNumberApi.getMyAssignment,
-//     enabled: !isElevatedRole && !!user,
-//     retry: false,
-//   });
-
-//   const [authError, setAuthError] = useState<string | null>(null);
-
-//   const { clientRef, status, error, connect } = useStringeeClient();
-//   const {
-//     callState,
-//     durationSec,
-//     toNumber,
-//     makeCall,
-//     hangup,
-//     reset,
-//     changeMicrophoneDevice,
-//     changeSpeakerDevice,
-//   } = useDialer({ clientRef });
-
-//   const [input, setInput] = useState("");
-//   const { data: paramLead } = useLead(paramLeadId || "");
-
-//   useEffect(() => {
-//     if (paramLead?.phone) {
-//       const cleanPhone = paramLead.phone.startsWith("91")
-//         ? paramLead.phone
-//         : `91${paramLead.phone}`;
-//       setInput(cleanPhone);
-//     }
-//   }, [paramLead]);
-
-//   // Connect WebRTC automatically if verified/elevated
-//   useEffect(() => {
-//     if (isAuthenticated) {
-//       connect();
-//     }
-//   }, [isAuthenticated, connect]);
-
-//   const handleVerifyAndConnect = (password: string) => {
-//     if (
-//       assignment?.stringeePassword &&
-//       password !== assignment.stringeePassword
-//     ) {
-//       setAuthError("Invalid Stringee Password. Access denied.");
-//       return;
-//     }
-
-//     setAuthError(null);
-//     // Save verification flag for today
-//     sessionStorage.setItem(storageKey, "true");
-//     setIsAuthenticated(true);
-//   };
-
-//   const handleCloseModal = () => {
-//     // Navigate back if user dismisses modal without authenticating
-//     navigate(-1);
-//   };
-
-//   const isBusy =
-//     callState !== "idle" && callState !== "ended" && callState !== "failed";
-
-//   const handleCall = () => {
-//     if (!input.trim() || status !== "connected") return;
-//     makeCall(input.trim(), {
-//       leadId: paramLead?._id || null,
-//       userId: user?._id,
-//       branchId: user?.branches?.[0],
-//     });
-//   };
-
-//   if (!isElevatedRole && isLoadingAssignment) {
-//     return (
-//       <div className="flex h-[60vh] flex-col items-center justify-center gap-3">
-//         <span className="material-symbols-outlined animate-spin text-3xl text-primary">
-//           progress_activity
-//         </span>
-//         <p className="text-xs font-semibold text-on-surface-variant">
-//           Verifying Dialer Access Permissions...
-//         </p>
-//       </div>
-//     );
-//   }
-
-//   if (
-//     !isElevatedRole &&
-//     (isError || !assignment || !assignment.stringeeUserId)
-//   ) {
-//     return (
-//       <div className="p-8 max-w-2xl mx-auto text-center space-y-4 my-12">
-//         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-600">
-//           <span className="material-symbols-outlined text-3xl">
-//             phone_disabled
-//           </span>
-//         </div>
-//         <h2 className="font-headline-md text-xl font-extrabold text-on-surface">
-//           Dialer Access Restricted
-//         </h2>
-//         <p className="font-body-md text-xs sm:text-sm text-on-surface-variant">
-//           You currently do not have an assigned Stringee Virtual Line or active
-//           credentials. Please contact your Administrator or Branch Manager to
-//           configure your dialer access.
-//         </p>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="space-y-6 relative">
-//       {/* Modal required if not authenticated */}
-//       {!isElevatedRole && !isAuthenticated && assignment && (
-//         <DialerAccessModal
-//           assignedUserId={assignment.stringeeUserId!}
-//           onVerifyAndConnect={handleVerifyAndConnect}
-//           onClose={handleCloseModal}
-//           isConnecting={status === "connecting"}
-//           error={authError || error}
-//         />
-//       )}
-
-//       {/* Header Banner */}
-//       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-outline-variant/20 pb-4">
-//         <div>
-//           <h1 className="font-headline-md text-2xl font-black text-on-surface tracking-tight">
-//             Dialer
-//           </h1>
-//           <p className="font-body-sm text-xs text-on-surface-variant mt-0.5">
-//             Real-time outbound voice communication powered by Stringee
-//             {assignment?.phoneNumber && (
-//               <span className="ml-2 font-mono font-bold text-primary">
-//                 ({assignment.phoneNumber})
-//               </span>
-//             )}
-//           </p>
-//         </div>
-
-//         <div className="flex items-center gap-2">
-//           <span
-//             className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
-//               status === "connected"
-//                 ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20"
-//                 : status === "connecting"
-//                   ? "bg-amber-500/10 text-amber-700 border-amber-500/20"
-//                   : "bg-rose-500/10 text-rose-700 border-rose-500/20"
-//             }`}
-//           >
-//             <span
-//               className={`h-2 w-2 rounded-full ${
-//                 status === "connected"
-//                   ? "bg-emerald-500 animate-pulse"
-//                   : status === "connecting"
-//                     ? "bg-amber-500 animate-ping"
-//                     : "bg-rose-500"
-//               }`}
-//             />
-//             {status === "connecting" && "Connecting WebRTC…"}
-//             {status === "connected" && "Service Online"}
-//             {status === "error" && (error || "Connection Error")}
-//             {status === "disconnected" && "Offline"}
-//           </span>
-//         </div>
-//       </div>
-
-//       {/* Main Grid */}
-//       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-//         <div className="lg:col-span-6 xl:col-span-5">
-//           <KeypadConsole
-//             input={input}
-//             setInput={setInput}
-//             isBusy={isBusy}
-//             status={status}
-//             error={error}
-//             callState={callState}
-//             durationSec={durationSec}
-//             toNumber={toNumber}
-//             onMakeCall={handleCall}
-//             onHangup={hangup}
-//             onReset={reset}
-//             changeMicrophoneDevice={changeMicrophoneDevice}
-//             changeSpeakerDevice={changeSpeakerDevice}
-//           />
-//         </div>
-
-//         <div className="lg:col-span-6 xl:col-span-7">
-//           <LeadContextCard
-//             phoneNumber={input}
-//             onSelectLeadPhone={(phone) => setInput(phone)}
-//           />
-//         </div>
-//       </div>
-
-//       <div>
-//         <RecentCallLogsTable limit={10} onRedial={(phone) => setInput(phone)} />
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default Dialer;
-
-// src/features/dialer/components/Dialer.tsx
-import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useStringeeClient } from "../hooks/useStringeeClient";
-import { useDialer } from "../hooks/useDialer";
+import { useEffect, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/auth.store";
+import { useCallStore } from "@/store/call.store";
 import { useLead } from "@/features/leads/hooks/useLeads";
-import { KeypadConsole } from "./KeypadConsole";
+import { dialixaApi, dialixaError } from "@/services/dialixaApi";
+import { dialerKeys } from "../hooks/useCallHistory";
 import { LeadContextCard } from "./LeadContextCard";
 import { RecentCallLogsTable } from "./RecentCallLogsTable";
-import { stringeeNumberApi } from "@/services/stringeeNumberApi";
-import { DialerAccessModal } from "./DialerAccessModal";
-import { ROLES } from "@/types/auth";
 
 export const Dialer = () => {
   const user = useAuthStore((s) => s.user);
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const paramLeadId = searchParams.get("leadId") || searchParams.get("phone");
-
-  const isElevatedRole =
-    user?.role === ROLES.HEAD ||
-    user?.role === ROLES.ADMIN ||
-    user?.role === ROLES.MANAGER;
-
-  // Explicitly check if logged-in user is an Employee
-  const isEmployee = user?.role === ROLES.EMPLOYEE;
-
-  const storageKey = `dialer_auth_verified_${user?._id}`;
-
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    if (isElevatedRole) return true;
-    return sessionStorage.getItem(storageKey) === "true";
-  });
-
-  const {
-    data: assignment,
-    isLoading: isLoadingAssignment,
-    isError,
-  } = useQuery({
-    queryKey: ["my-stringee-assignment"],
-    queryFn: stringeeNumberApi.getMyAssignment,
-    enabled: !isElevatedRole && !!user,
-    retry: false,
-  });
-
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [dialError, setDialError] = useState<string | null>(null);
-
-  const { clientRef, status, error, connect } = useStringeeClient();
-  const {
-    callState,
-    durationSec,
-    toNumber,
-    makeCall,
-    hangup,
-    reset,
-    changeMicrophoneDevice,
-    changeSpeakerDevice,
-  } = useDialer({ clientRef });
-
-  const [input, setInput] = useState("");
-  const { data: paramLead } = useLead(paramLeadId || "");
+  const [params, setParams] = useSearchParams();
+  const leadId = params.get("leadId") || "";
+  const directLead = useLead(leadId || undefined);
+  const activeLead = useCallStore((s) => s.activeLead);
+  const setActiveLead = useCallStore((s) => s.setActiveLead);
+  const selectedLead = leadId ? directLead.data : activeLead;
+  const isEmployee = user?.role === "employee";
+  const canManage = user?.role === "head" || user?.role === "admin";
+  const queryClient = useQueryClient();
+  const session = useQuery({ queryKey: ["dialixa", "session", user?._id], queryFn: dialixaApi.session, retry: false });
+  const [number, setNumber] = useState(params.get("phone") || "");
+  const [softphoneReady, setSoftphoneReady] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [notice, setNotice] = useState("");
+  const requestId = useRef(crypto.randomUUID());
+  const inFlight = useRef(false);
+  const call = useMutation({ mutationFn: dialixaApi.call, retry: false });
 
   useEffect(() => {
-    if (paramLead?.phone) {
-      const cleanPhone = paramLead.phone.startsWith("91")
-        ? paramLead.phone
-        : `91${paramLead.phone}`;
-      setInput(cleanPhone);
-    }
-  }, [paramLead]);
-
+    if (selectedLead) setNumber(`${selectedLead.phoneCountryCode}${selectedLead.phone}`);
+  }, [selectedLead]);
   useEffect(() => {
-    if (isAuthenticated) {
-      connect();
-    }
-  }, [isAuthenticated, connect]);
+    if (cooldown <= 0) return;
+    const timer = window.setTimeout(() => setCooldown((v) => Math.max(0, v - 1)), 1000);
+    return () => window.clearTimeout(timer);
+  }, [cooldown]);
 
-  const handleVerifyAndConnect = (password: string) => {
-    if (
-      assignment?.stringeePassword &&
-      password !== assignment.stringeePassword
-    ) {
-      setAuthError("Invalid Stringee Password. Access denied.");
-      return;
-    }
-
-    setAuthError(null);
-    sessionStorage.setItem(storageKey, "true");
-    setIsAuthenticated(true);
+  const startNewRequest = () => {
+    requestId.current = crypto.randomUUID();
+    call.reset();
+    setNotice("");
+  };
+  const handleCall = async () => {
+    if (inFlight.current || cooldown > 0 || call.isSuccess || call.isError) return;
+    inFlight.current = true;
+    setNotice("");
+    try {
+      const response = await call.mutateAsync({ requestId: requestId.current, ...(selectedLead ? { leadId: selectedLead._id } : { number }) });
+      setCooldown(response.cooldownSeconds);
+      await queryClient.invalidateQueries({ queryKey: dialerKeys.all });
+    } catch {
+      // Retain the request ID on all failures; never auto-retry an ambiguous call.
+      await queryClient.invalidateQueries({ queryKey: dialerKeys.all });
+    } finally { inFlight.current = false; }
   };
 
-  const handleCloseModal = () => {
-    navigate(-1);
-  };
-
-  const isBusy =
-    callState !== "idle" && callState !== "ended" && callState !== "failed";
-
-  const handleCall = () => {
-    setDialError(null);
-    const targetNumber = input.trim();
-    if (!targetNumber || status !== "connected") return;
-
-    // --- ASSIGNED LEAD VALIDATION FOR EMPLOYEES ---
-    if (isEmployee) {
-      const cleanInput = targetNumber.replace(/^\+?91/, "");
-      const cleanParamLeadPhone = paramLead?.phone?.replace(/^\+?91/, "");
-
-      // Verify that the dialed number belongs to an assigned lead loaded in state
-      const matchesParamLead = paramLead && cleanParamLeadPhone === cleanInput;
-
-      if (!matchesParamLead) {
-        setDialError(
-          "Access Denied: You are only allowed to dial assigned leads.",
-        );
-        return;
-      }
-    }
-
-    makeCall(targetNumber, {
-      leadId: paramLead?._id || null,
-      userId: user?._id,
-      branchId: user?.branches?.[0],
-    });
-  };
-
-  if (!isElevatedRole && isLoadingAssignment) {
-    return (
-      <div className="flex h-[60vh] flex-col items-center justify-center gap-3">
-        <span className="material-symbols-outlined animate-spin text-3xl text-primary">
-          progress_activity
-        </span>
-        <p className="text-xs font-semibold text-on-surface-variant">
-          Verifying Dialer Access Permissions...
-        </p>
-      </div>
-    );
-  }
-
-  if (
-    !isElevatedRole &&
-    (isError || !assignment || !assignment.stringeeUserId)
-  ) {
-    return (
-      <div className="p-8 max-w-2xl mx-auto text-center space-y-4 my-12">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-600">
-          <span className="material-symbols-outlined text-3xl">
-            phone_disabled
-          </span>
-        </div>
-        <h2 className="font-headline-md text-xl font-extrabold text-on-surface">
-          Dialer Access Restricted
-        </h2>
-        <p className="font-body-md text-xs sm:text-sm text-on-surface-variant">
-          You currently do not have an assigned Stringee Virtual Line or active
-          credentials. Please contact your Administrator or Branch Manager to
-          configure your dialer access.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6 relative">
-      {!isElevatedRole && !isAuthenticated && assignment && (
-        <DialerAccessModal
-          assignedUserId={assignment.stringeeUserId!}
-          onVerifyAndConnect={handleVerifyAndConnect}
-          onClose={handleCloseModal}
-          isConnecting={status === "connecting"}
-          error={authError || error}
-        />
-      )}
-
-      {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-outline-variant/20 pb-4">
-        <div>
-          <h1 className="font-headline-md text-2xl font-black text-on-surface tracking-tight">
-            Dialer
-          </h1>
-          <p className="font-body-sm text-xs text-on-surface-variant mt-0.5">
-            Real-time outbound voice communication powered by Stringee
-            {assignment?.phoneNumber && (
-              <span className="ml-2 font-mono font-bold text-primary">
-                ({assignment.phoneNumber})
-              </span>
-            )}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
-              status === "connected"
-                ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20"
-                : status === "connecting"
-                  ? "bg-amber-500/10 text-amber-700 border-amber-500/20"
-                  : "bg-rose-500/10 text-rose-700 border-rose-500/20"
-            }`}
-          >
-            <span
-              className={`h-2 w-2 rounded-full ${
-                status === "connected"
-                  ? "bg-emerald-500 animate-pulse"
-                  : status === "connecting"
-                    ? "bg-amber-500 animate-ping"
-                    : "bg-rose-500"
-              }`}
-            />
-            {status === "connecting" && "Connecting WebRTC…"}
-            {status === "connected" && "Service Online"}
-            {status === "error" && (error || "Connection Error")}
-            {status === "disconnected" && "Offline"}
-          </span>
-        </div>
-      </div>
-
-      {dialError && (
-        <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-2 text-rose-600 text-xs font-semibold">
-          <span className="material-symbols-outlined text-base">block</span>
-          {dialError}
-        </div>
-      )}
-
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className="lg:col-span-6 xl:col-span-5">
-          <KeypadConsole
-            input={input}
-            setInput={(val) => {
-              setDialError(null);
-              // Block setInput updates if user is employee
-              if (!isEmployee) setInput(val);
-            }}
-            isBusy={isBusy}
-            status={status}
-            error={error}
-            callState={callState}
-            durationSec={durationSec}
-            toNumber={toNumber}
-            onMakeCall={handleCall}
-            onHangup={hangup}
-            onReset={reset}
-            changeMicrophoneDevice={changeMicrophoneDevice}
-            changeSpeakerDevice={changeSpeakerDevice}
-            isEmployee={isEmployee}
-          />
-        </div>
-
-        <div className="lg:col-span-6 xl:col-span-7">
-          <LeadContextCard
-            phoneNumber={input}
-            onSelectLeadPhone={(phone) => {
-              setDialError(null);
-              setInput(phone);
-            }}
-          />
-        </div>
-      </div>
-
-      <div>
-        <RecentCallLogsTable limit={10} onRedial={(phone) => setInput(phone)} />
+  return <div className="space-y-6 text-on-surface">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-outline-variant/20 pb-4">
+      <div><h1 className="text-2xl font-bold">Dialixa dialer</h1><p className="mt-1 text-sm text-on-surface-variant">Request a call from your assigned agent extension.</p></div>
+      {canManage && <Link to="/dialer/numbers" className="text-sm font-bold text-primary hover:underline">Dialer setup</Link>}
+    </div>
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 items-start">
+      <section className="rounded-2xl border border-outline-variant/30 bg-surface p-6 space-y-5">
+        <h2 className="text-lg font-bold">Click to call</h2>
+        {session.isLoading ? <p>Checking dialer access…</p> : session.isError ? <div role="alert" className="space-y-2 text-sm text-rose-600"><p>{dialixaError(session.error)}</p><button type="button" onClick={() => session.refetch()} className="font-bold underline">Check again</button></div> : <>
+          <div className="rounded-xl bg-surface-container-low p-4 text-sm space-y-1">
+            <p className="font-semibold">Agent extension: {session.data?.extension || "Not assigned"}</p>
+            <p className="text-on-surface-variant">{session.data?.canCall ? "Extension enabled in CRM" : !session.data?.configured || !session.data?.enabled ? "Head must complete and enable Dialixa account setup." : "Ask Head or Admin to assign and enable your extension."}</p>
+          </div>
+          <label className="block space-y-2 text-sm font-semibold">{selectedLead ? `Customer · ${selectedLead.name}` : "Customer phone number"}
+            <input aria-label="Customer phone number" type="tel" inputMode="tel" value={number} readOnly={isEmployee || !!selectedLead} disabled={call.isPending || cooldown > 0} onChange={(e) => { setNumber(e.target.value); if (!call.isError && !call.isSuccess) requestId.current = crypto.randomUUID(); }} placeholder={isEmployee ? "Choose an assigned lead" : "Country code and phone number"} className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-4 py-3 text-lg font-mono outline-none focus:border-primary read-only:opacity-75" />
+          </label>
+          {isEmployee && <p className="text-sm text-on-surface-variant">Choose one of your assigned leads to place a call.</p>}
+          <ol className="list-decimal space-y-2 pl-5 text-sm text-on-surface-variant"><li>Open your Dialixa softphone and keep it registered.</li><li>Request the call here, then answer on your softphone.</li><li>Dialixa dials the customer after you answer.</li></ol>
+          <label className="flex items-start gap-3 text-sm"><input type="checkbox" checked={softphoneReady} onChange={(e) => setSoftphoneReady(e.target.checked)} disabled={call.isPending} className="mt-0.5 size-5 shrink-0 accent-primary" />My Dialixa softphone is open and registered.</label>
+          <button type="button" onClick={handleCall} disabled={!session.data?.canCall || !softphoneReady || !number.trim() || (isEmployee && !selectedLead) || !!(leadId && !directLead.data) || call.isPending || call.isSuccess || call.isError || cooldown > 0} className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-base font-bold text-on-primary disabled:opacity-50 disabled:cursor-not-allowed"><span className="material-symbols-outlined" aria-hidden="true">call</span>{call.isPending ? "Sending call request…" : "Request call"}</button>
+        </>}
+        {call.isSuccess && <div role="status" className="rounded-xl bg-emerald-500/10 p-4 text-sm text-emerald-800">{call.data.message}</div>}
+        {call.isError && <div role="alert" className="rounded-xl bg-rose-500/10 p-4 text-sm text-rose-700">{dialixaError(call.error)}</div>}
+        {(call.isSuccess || call.isError) && <button type="button" disabled={cooldown > 0 || call.isPending} onClick={startNewRequest} className="text-sm font-semibold text-primary underline disabled:opacity-50">{cooldown > 0 ? `New request available in ${cooldown}s` : call.isError ? "I checked my softphone · start a new request" : "Start a new call request"}</button>}
+        {notice && <p role="alert" className="text-sm text-rose-600">{notice}</p>}
+        <p className="border-t border-outline-variant/20 pt-4 text-sm text-on-surface-variant">Call controls stay in Dialixa. CRM records request acceptance; connected status, talk time and recordings require a separate Dialixa integration.</p>
+      </section>
+      <div className={call.isPending || cooldown > 0 ? "pointer-events-none opacity-60" : ""} inert={call.isPending || cooldown > 0}>
+        <LeadContextCard phoneNumber={number} onSelectLeadPhone={() => { startNewRequest(); }} />
       </div>
     </div>
-  );
+    <RecentCallLogsTable limit={10} onRedial={(phone, redialLeadId) => {
+      if (call.isPending || cooldown > 0) return;
+      if (isEmployee && !redialLeadId) { setNotice("Choose an assigned CRM lead before redialling this number."); return; }
+      setActiveLead(null);
+      setNumber(phone);
+      startNewRequest();
+      setParams(redialLeadId ? { leadId: redialLeadId } : { phone }, { replace: true });
+    }} />
+  </div>;
 };
 
 export default Dialer;

@@ -6,7 +6,7 @@ import { getSafeRecordingUrl, pauseOtherAudio } from "@/utils/dialer";
 
 interface RecentCallLogsTableProps {
   limit?: number;
-  onRedial?: (phone: string) => void;
+  onRedial?: (phone: string, leadId?: string) => void;
 }
 
 export const RecentCallLogsTable = ({
@@ -130,11 +130,11 @@ export const RecentCallLogsTable = ({
                         log.callStatus,
                       )}`}
                     >
-                      {log.callStatus}
+                      {log.callStatus === "requested" ? "Request sent" : log.callStatus === "unknown" ? "Outcome unknown" : log.callStatus === "requesting" ? "Request pending" : log.callStatus}
                     </span>
                   </td>
                   <td className="py-3 px-3 font-mono">
-                    {formatDuration(log.duration)}
+                    {log.provider === "dialixa" ? "Unavailable" : formatDuration(log.duration)}
                   </td>
                   <td className="py-3 px-3 text-on-surface-variant">
                     {new Date(log.createdAt).toLocaleTimeString([], {
@@ -154,14 +154,14 @@ export const RecentCallLogsTable = ({
                         className="h-8 w-48 rounded"
                       />
                     ) : (
-                      <span className="text-gray-400">No Recording</span>
+                      <span className="text-gray-400">{log.provider === "dialixa" ? "Unavailable" : "No Recording"}</span>
                     )}
                   </td>
 
                   <td className="py-3 px-3 text-right">
                     {onRedial && (
                       <button
-                        onClick={() => onRedial(log.toNumber)}
+                        onClick={() => onRedial(log.toNumber, log.lead?._id)}
                         className="px-2.5 py-1 text-[11px] font-semibold text-primary border border-primary/20 rounded-md hover:bg-primary/5 transition-colors cursor-pointer"
                       >
                         Redial

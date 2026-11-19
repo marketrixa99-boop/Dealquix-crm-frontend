@@ -6,7 +6,8 @@ export interface CallLogEntry {
   callId: string;
   fromNumber: string;
   toNumber: string;
-  callStatus: "started" | "answered" | "ended" | "missed" | "rejected";
+  callStatus: "started" | "answered" | "ended" | "missed" | "rejected" | "failed" | "requesting" | "requested" | "unknown";
+  provider?: "stringee" | "dialixa";
   duration: number;
   recordingUrl?: string;
   createdAt: string;
