@@ -1,4 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import { dialixaApi, dialixaError } from "@/services/dialixaApi";
+import { dialerKeys } from "@/features/dialer/hooks/useCallHistory";
 import {
   leadQueryKeys,
   useCreateLead,
@@ -63,6 +67,7 @@ const STATUS_DOT_CLASSES: Record<LeadStatus, string> = {
 };
 
 const LeadListPage = () => {
+  const queryClient = useQueryClient();
   // Navigation & Filtering States
   const [searchParams, setSearchParams] = useSearchParams();
   const viewMode = searchParams.get("view");
@@ -98,8 +103,37 @@ const LeadListPage = () => {
   const [createdTo, setCreatedTo] = useState("");
   const [detailLeadId, setDetailLeadId] = useState<string | null>(null);
   const [isBulkAssignOpen, setIsBulkAssignOpen] = useState(false);
+  const [callingLeadId, setCallingLeadId] = useState<string | null>(null);
+  const callInFlight = useRef(false);
+  const nextCallAt = useRef(0);
 
   const createLead = useCreateLead();
+
+  const callLead = async (lead: Lead) => {
+    if (callInFlight.current) return;
+    const secondsRemaining = Math.ceil((nextCallAt.current - Date.now()) / 1000);
+    if (secondsRemaining > 0) {
+      toast.error(`Wait ${secondsRemaining}s before placing another call.`);
+      return;
+    }
+
+    callInFlight.current = true;
+    setCallingLeadId(lead._id);
+    try {
+      const result = await dialixaApi.call({
+        leadId: lead._id,
+        requestId: crypto.randomUUID(),
+      });
+      nextCallAt.current = Date.now() + result.cooldownSeconds * 1000;
+      toast.success(result.message);
+    } catch (error) {
+      toast.error(dialixaError(error));
+    } finally {
+      callInFlight.current = false;
+      setCallingLeadId(null);
+      void queryClient.invalidateQueries({ queryKey: dialerKeys.all });
+    }
+  };
 
   const importLeads = useImportLeads();
 
@@ -693,9 +727,24 @@ const LeadListPage = () => {
                             {lead?.name}
                           </button>
 
-                          <p className="text-on-surface-variant/80 font-medium">
-                            {lead?.phoneCountryCode} {lead.phone}
-                          </p>
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span className="text-on-surface-variant/80 font-medium">
+                              {lead?.phoneCountryCode} {lead.phone}
+                            </span>
+                            {lead.phone?.trim() && (
+                              <button
+                                type="button"
+                                aria-label={`Call ${lead.name}`}
+                                title="Call with Dialixa"
+                                disabled={callingLeadId !== null}
+                                onClick={() => void callLead(lead)}
+                                className="inline-flex min-h-8 items-center gap-1 rounded-lg bg-primary/10 px-2 text-xs font-semibold text-primary hover:bg-primary/20 disabled:opacity-50"
+                              >
+                                <span className="material-symbols-outlined text-base" aria-hidden="true">call</span>
+                                {callingLeadId === lead._id ? "Calling…" : "Call"}
+                              </button>
+                            )}
+                          </div>
 
                           {lead.email && (
                             <p className="text-[11px] text-on-surface-variant/70">
