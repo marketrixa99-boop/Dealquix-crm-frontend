@@ -22,7 +22,6 @@ export const Dialer = () => {
   const queryClient = useQueryClient();
   const session = useQuery({ queryKey: ["dialixa", "session", user?._id], queryFn: dialixaApi.session, retry: false });
   const [number, setNumber] = useState(params.get("phone") || "");
-  const [softphoneReady, setSoftphoneReady] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [notice, setNotice] = useState("");
   const requestId = useRef(crypto.randomUUID());
@@ -74,9 +73,11 @@ export const Dialer = () => {
             <input aria-label="Customer phone number" type="tel" inputMode="tel" value={number} readOnly={isEmployee || !!selectedLead} disabled={call.isPending || cooldown > 0} onChange={(e) => { setNumber(e.target.value); if (!call.isError && !call.isSuccess) requestId.current = crypto.randomUUID(); }} placeholder={isEmployee ? "Choose an assigned lead" : "Country code and phone number"} className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-4 py-3 text-lg font-mono outline-none focus:border-primary read-only:opacity-75" />
           </label>
           {isEmployee && <p className="text-sm text-on-surface-variant">Choose one of your assigned leads to place a call.</p>}
-          <ol className="list-decimal space-y-2 pl-5 text-sm text-on-surface-variant"><li>Open your Dialixa softphone and keep it registered.</li><li>Request the call here, then answer on your softphone.</li><li>Dialixa dials the customer after you answer.</li></ol>
-          <label className="flex items-start gap-3 text-sm"><input type="checkbox" checked={softphoneReady} onChange={(e) => setSoftphoneReady(e.target.checked)} disabled={call.isPending} className="mt-0.5 size-5 shrink-0 accent-primary" />My Dialixa softphone is open and registered.</label>
-          <button type="button" onClick={handleCall} disabled={!session.data?.canCall || !softphoneReady || !number.trim() || (isEmployee && !selectedLead) || !!(leadId && !directLead.data) || call.isPending || call.isSuccess || call.isError || cooldown > 0} className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-base font-bold text-on-primary disabled:opacity-50 disabled:cursor-not-allowed"><span className="material-symbols-outlined" aria-hidden="true">call</span>{call.isPending ? "Sending call request…" : "Request call"}</button>
+          <div className="flex items-center gap-3 rounded-xl border border-outline-variant/30 bg-surface-container-low px-4 py-3">
+            <span className="material-symbols-outlined text-primary" aria-hidden="true">headset_mic</span>
+            <p className="text-sm text-on-surface-variant">Keep Dialixa open. Answer your extension to connect the customer.</p>
+          </div>
+          <button type="button" onClick={handleCall} disabled={!session.data?.canCall || !number.trim() || (isEmployee && !selectedLead) || !!(leadId && !directLead.data) || call.isPending || call.isSuccess || call.isError || cooldown > 0} className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-base font-bold text-on-primary disabled:opacity-50 disabled:cursor-not-allowed"><span className="material-symbols-outlined" aria-hidden="true">call</span>{call.isPending ? "Calling…" : "Call now"}</button>
         </>}
         {call.isSuccess && <div role="status" className="rounded-xl bg-emerald-500/10 p-4 text-sm text-emerald-800">{call.data.message}</div>}
         {call.isError && <div role="alert" className="rounded-xl bg-rose-500/10 p-4 text-sm text-rose-700">{dialixaError(call.error)}</div>}
